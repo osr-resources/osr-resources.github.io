@@ -64,7 +64,11 @@
 			-ms-transform: rotate(-0.8433333deg);  
 			-o-transform: rotate(-0.8433333deg);  
 			transform: rotate(-0.8433333deg);  
-		}  
+		}
+
+		.position-labels {
+			font-size: small;
+		}
 		
 
 	</style>
@@ -1013,13 +1017,19 @@
 
 				markers.push(marker);
 
-				google.maps.event.addListener(markers[markers.length - 1], "position_changed", function () { changeRectangle() });
+				google.maps.event.addListener(markers[markers.length - 1], "position_changed", function () {
+					updateMarkerLabels();
+					changeRectangle();
+				});
 
-
+				
+				updateMarkerLabels();
 				//if 2, draw rectangle
 				if (markers.length == 2) {
 					drawRectangle();
 				}
+
+				
 				//document.getElementById("clearMarkerButton").style.display = "";
 			}
 		}
@@ -1066,6 +1076,44 @@
 				});
 				//fitMap();
 				//document.getElementById("clearRectangleButton").style.display = "";
+			}
+		}
+
+		
+		var _computeRectangleArea = function(bounds) {
+			if (!bounds) {
+				return 0;
+			}
+			var sw = bounds.getSouthWest();
+			var ne = bounds.getNorthEast();
+			var southWest = new google.maps.LatLng(sw.lat(), sw.lng());
+			var northEast = new google.maps.LatLng(ne.lat(), ne.lng());
+			var southEast = new google.maps.LatLng(sw.lat(), ne.lng());
+			var northWest = new google.maps.LatLng(ne.lat(), sw.lng());
+			return google.maps.geometry.spherical.computeArea([northEast, northWest, southWest, southEast]);
+		};
+
+		function updateMarkerLabels() {
+			if(markers[0]) {
+				var p = markers[0].getPosition();
+				document.getElementById("marker1").style.display = "";
+				document.getElementById("m1_p").textContent = `${p.lat()}, ${p.lng()}`;
+				
+			}
+			if(markers[1]) {
+				var p = markers[1].getPosition();
+				document.getElementById("marker2").style.display = "";
+				document.getElementById("m2_p").textContent = `${p.lat()}, ${p.lng()}`;
+			}
+
+			if(rectangle && rectangle.length != 0) {
+				document.getElementById("area").style.display = "";
+				var area = _computeRectangleArea(rectangle.getBounds());
+				var sqft = Math.round(10.76391 * area * 1000) / 1000;
+				var acres = Math.round(0.0002471052 * area * 1000) / 1000;
+				document.getElementById("area_sqft").textContent = `${sqft} sqft`;
+				document.getElementById("area_acre").textContent = `${acres} acres`;
+				console.log(area,sqft,acres);
 			}
 		}
 
@@ -1751,6 +1799,11 @@
 	</div>
 	</div>
 	<div style="clear: both;"> </div>
+	<p>
+		<div style="display:none" id="marker1">Marker 1: <span id="m1_p"></span></div>
+		<div style="display:none" id="marker2">Marker 2: <span id="m2_p"></span></div>
+		<div style="display:none" id="area">Area: <span id="area_acre"></span> / <span id="area_sqft"></span></div>
+	</p>
 	<div style="margin-top:0px;">
 		<h3>Elevation Data (Optional)<br></h3>
 		<div id="plottingArea">
