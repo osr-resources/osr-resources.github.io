@@ -469,13 +469,17 @@
 				if (document.getElementById("levelInterval").checked) {
 					step = parseFloat(document.getElementById("intervalContour").value);
 					var finalMin = min;
-					if (document.getElementById('unitFeet').checked == true) {
-						step = parseFloat(document.getElementById("intervalContour").value) * 0.3048;
-						if(document.getElementById('unitLines').checked == true) {
+					if (document.getElementById('unitFeet').checked) {
+						if(document.getElementById('intUnit').checked) {
 							finalMin = Math.ceil(finalMin * 3.28084) * 0.3048;
+						} else if(document.getElementById('intInterval').checked) {
+							finalMin = Math.ceil((finalMin * 3.28084) / step) * 0.3048 * step;
 						}
-					} else if(document.getElementById('unitLines').checked == true){
+						step = step * 0.3048;
+					} else if(document.getElementById('intUnit').checked){
 						finalMin = Math.ceil(finalMin);
+					} else if(document.getElementById('intInterval').checked) {
+						finalMin = Math.ceil(finalMin / step) * step;
 					}
 					nstep = (max - finalMin) / step;
 					for (var iLevel = 0; iLevel < nstep; iLevel++) {
@@ -671,16 +675,6 @@
 
 			}
 		}
-
-		function handleRadioClick() {
-			if(document.getElementById("levelInterval").checked) {
-				document.getElementById("unitLines").disabled = false;
-			} else {
-				document.getElementById("unitLines").disabled = true;
-			}
-		}
-
-
 
 		function initialize() {
 			geocoder = new google.maps.Geocoder();
@@ -1699,28 +1693,34 @@
 
 		<div style="float:left;">
 			<table style="border:black 1px solid;border-collapse:collapse;">
-				<tr>
+				<
 					<td class="PO"><span class="POtitle">Plot Options</span>
 						<div style="float:right;"><input type="button" onclick="calculateContour()"
 								value="redraw contours" title="draw contours"></div>
 					</td>
 				</tr>
 				<tr>
-					<td class="PO"><label><input type="radio" name="levelMode" id="levelModeAuto" value="auto" onClick="handleRadioClick()"
+					<td class="PO"><label><input type="radio" name="levelMode" id="levelModeAuto" value="auto"
 								checked>Number of levels: </label><input type="text" name="nContour" id="nContour"
 							value='7' style="width:20px;"></td>
 				</tr>
 				<tr>
-					<td class="PO"><label><input type="radio" name="levelMode" id="levelModeCustom" onClick="handleRadioClick()"
+					<td class="PO"><label><input type="radio" name="levelMode" id="levelModeCustom"
 								value="custom">Custom levels [<span id="unitCustomLevels">ft</span>]: </label><input
 							type="text" name="customContour" id="customContour" value='380,400,420'
 							style="width:100px;"></td>
 				</tr>
 				<tr>
-					<td class="PO"><label><input type="radio" name="levelMode" id="levelInterval" value="custom" onClick="handleRadioClick()">Level
+					<td class="PO"><label><input type="radio" name="levelMode" id="levelInterval" value="custom">Level
 							Interval [<span id="unitIntervalLevels">ft</span>]: </label><input type="text"
-							name="intervalContour" id="intervalContour" value='5' style="width:20px;"><br>
-							<label><input type="checkbox" name="unitLines" id="unitLines" disabled checked> Plot lines at whole units</label>
+							name="intervalContour" id="intervalContour" value='2' style="width:20px;"><br>
+							<!-- <label><input type="checkbox" name="wholeInterval" id="wholeInterval" disabled checked> Plot lines at whole units</label> -->
+							<div style="margin-left:20px;"">
+								Start at:
+								<label style="margin-left: -4px;"><input type="radio" name="intervalMode" id="intUnit" value="unit" checked>Unit</label>
+								<label><input type="radio" name="intervalMode" id="intInterval" value="interval">Interval</label>
+								<label><input type="radio" name="intervalMode" id="intMin" value="min">Min</label>
+							</div>
 						</td>
 				</tr>
 				<tr>
@@ -1729,7 +1729,8 @@
 				</tr>
 				<tr>
 					<td class="PO">&nbsp;&nbsp;Units: <label><input type="radio" name="units" id="unitMeter"
-								onclick="changeUnitLabels()">m</label><label><input type="radio" name="units"
+								onclick="changeUnitLabels()">m</label>
+								<label><input type="radio" name="units"
 								id="unitFeet" onclick="changeUnitLabels()" checked>ft</label></td>
 				</tr>
 				<tr>
