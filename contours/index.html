@@ -83,6 +83,8 @@
 
 	<script type="text/javascript">
 
+		var MetertoFT = 3.28084;
+		var FTtoMeter = 0.3048;
 		var thisLine = "";
 		var reguestHistory = "";
 		var width = 0;
@@ -106,21 +108,21 @@
 				var pointsWE = width;
 			}
 
-			LongDiff = +$('#maxLongitude').val() - +$('#minLongitude').val();
-			LatDiff = +$('#maxLatitude').val() - +$('#minLatitude').val();
+			LongDiff = maxLongitude() - minLongitude();
+			LatDiff = maxLatitude() - minLatitude();
 
 			stepsizeLong = parseFloat(LongDiff) / (pointsWE - 1);
 			stepsizeLat = parseFloat(LatDiff) / (pointsNS - 1);
 
-			var radius = Math.min(Math.round(getDistanceFromLatLonInM(meanLat, +$('#maxLongitude').val(), meanLat, +$('#minLongitude').val()) / (width - 1)) / 4,
-				Math.round(getDistanceFromLatLonInM(+$('#maxLatitude').val(), meanLong, +$('#minLatitude').val(), meanLong) / (height - 1)) / 8);
+			var radius = Math.min(Math.round(getDistanceFromLatLonInM(meanLat, maxLongitude(), meanLat, minLongitude()) / (width - 1)) / 4,
+				Math.round(getDistanceFromLatLonInM(maxLatitude(), meanLong, minLatitude(), meanLong) / (height - 1)) / 8);
 			//console.log(radius);
 
 			for (iLat = 0; iLat < pointsNS; iLat++) {
-				thisLatitude = +$('#minLatitude').val() + iLat * stepsizeLat;
+				thisLatitude = minLatitude() + iLat * stepsizeLat;
 
 				for (iLong = 0; iLong < pointsWE; iLong++) {
-					thisValue = +$('#minLongitude').val() + iLong * stepsizeLong;
+					thisValue = minLongitude() + iLong * stepsizeLong;
 					sampleCoordinates.push(thisLatitude + "," + thisValue);
 				}
 			}
@@ -171,12 +173,10 @@
 				}
 				// Initiate the location request
 				setTimeout(() => {
-					console.log(positionalRequest);
 					elevator.getElevationForLocations(positionalRequest, function (results, status) {
 						if (status == google.maps.ElevationStatus.OK) {
 
 							// Retrieve the first result
-							console.log(results)
 							if (results[0]) {
 								var c = (i * batch) % colWidth;;
 								var result = '';
@@ -198,6 +198,22 @@
 			});
 		}
 
+		function minLongitude() {
+			return Math.min(+$('#minLongitude').val(),$('#maxLongitude').val());
+		}
+
+		function maxLongitude() {
+			return Math.max(+$('#minLongitude').val(),$('#maxLongitude').val());
+		}
+
+		function minLatitude() {
+			return Math.min(+$('#minLatitude').val(),$('#maxLatitude').val());
+		}
+
+		function maxLatitude() {
+			return Math.max(+$('#minLatitude').val(),$('#maxLatitude').val());
+		}
+
 		function getData() {
 			if (
 				document.getElementById("minLatitude").value == "" ||
@@ -211,8 +227,8 @@
 			//empty data
 			$('#output').val("");
 
-			LongDiff = +$('#maxLongitude').val() - +$('#minLongitude').val();
-			LatDiff = +$('#maxLatitude').val() - +$('#minLatitude').val();
+			LongDiff = maxLongitude() - minLongitude();
+			LatDiff = maxLatitude() - minLatitude();
 			//alert(LongDiff);
 
 			var pointsNS = parseInt($('#pointsNS').val());
@@ -229,10 +245,10 @@
 			var locations = [];
 
 			for (iLat = 0; iLat < pointsNS; iLat++) {
-				thisLatitude = +$('#minLatitude').val() + iLat * stepsizeLat;
+				thisLatitude = minLatitude() + iLat * stepsizeLat;
 
 				for (iLong = 0; iLong < pointsWE; iLong++) {
-					thisValue = +$('#minLongitude').val() + iLong * stepsizeLong;
+					thisValue = minLongitude() + iLong * stepsizeLong;
 					//searchString = searchString + thisLatitude + "," + thisValue + "|";
 					var thisCoord = new google.maps.LatLng(thisLatitude, thisValue);
 					locations.push(thisCoord);
@@ -265,104 +281,6 @@
 				alert(error);
 				document.getElementById("querying").style.display = "none";
 			});
-			
-			/*
-				for(iLat=0; iLat<pointsNS; iLat++) {
-				thisLatitude = +$('#minLatitude').val() + iLat*stepsizeLat;
-				searchString = "";
-
-				for(iLong=0; iLong<pointsWE; iLong++) {
-				thisValue = +$('#minLongitude').val() + iLong*stepsizeLong;
-				searchString = searchString + thisLatitude + "," + thisValue + "|";
-			}
-
-			searchString = searchString.slice(0,searchString.length-1);
-
-				myURL = "http://maps.googleapis.com/maps/api/elevation/json?locations=" + searchString + "&sensor=false";
-				//http://maps.googleapis.com/maps/api/elevation/xml?locations=39.7391536,-104.9847034|36.455556,-116.866667&sensor=true_or_false
-
-				requestHistory = requestHistory + searchString + "\n";
-
-				thisLine = "";
-				calls.push(
-					$.getJSON(myURL,
-						(function(iLat) {
-							return function(d) {
-								data[iLat] = d;
-								console.log(data);
-
-							};
-						}(iLat))
-					)
-				);
-			}
-
-			flagError = 0;
-			$.when.apply($,calls).then(function() {
-				//http://stackoverflow.com/questions/11899417/jquery-best-approach-for-calling-getjson-in-loop-when-you-need-to-wait-for-all
-				//console.log(data);
-				console.log(data);
-				alert("here");
-
-				//check order
-				var lineLat = new Array();
-				for(iO in data){
-				lineLat.push(data[iO].results[0].location.lat);
-				}
-				//http://www.javascriptkit.com/javatutors/arraysort.shtml
-				lineLatSorted = lineLat.slice();
-				//lineLatSorted.sort(function(a,b){return a - b}) //ascending
-				lineLatSorted = lineLatSorted.sort(function(a,b){return b - a}); //descending
-				//console.log(lineLat,lineLatSorted);
-
-				//rearrange data
-
-				var dataRearranged = new Array();
-				for (iLineLat in lineLatSorted){
-					for (iO in data){
-					if (lineLatSorted[iLineLat] == data[iO].results[0].location.lat){
-					//alert("found");
-					dataRearranged.push(data[iO]);
-					break;}
-					}
-				}
-
-				data = dataRearranged.slice();
-				//alert("here");
-				//console.log(dataRearranged);
-
-				for(iO in data){
-				if (data[iO].status != "OK")
-				{alert("Error during query: " + data[iO].status + "\nCopy data manually in the data area if available to plot contours or wait and retry.");
-				flagError = 1;
-				break;
-				}
-
-
-
-					for(iP = 0; iP<data[iO].results.length; iP++){
-					thisLine += data[iO].results[iP].elevation;
-					if (iP == data[iO].results.length-1){
-					//last element
-					thisLine += "\n";
-					}
-					else {thisLine += "\t";}
-					}
-				}
-				if (flagError == 0){
-				document.getElementById("output").value = thisLine;
-				//document.getElementById("output").value = roundElevationData(document.getElementById("output").value);
-
-				saveDataTextArea();
-				//saveToCookie('');
-				//alert("Data successfully received.");
-				calculateContour();
-				fitMap();
-				}
-			});
-
-				document.getElementById("requestHistory").value = requestHistory;
-			*/
 
 		}
 
@@ -410,7 +328,7 @@
 
 			allValues = document.getElementById("output").value;
 			if (allValues == "") {
-				alert("No data available. Click [get data] first or copy data in the data field manually.");
+				alert("No data available. Click [Get Data] first or copy data in the data field manually.");
 			}
 			else {
 
@@ -442,10 +360,6 @@
 					matrix[iLine] = lineArray[iLine].split("\t");
 				}
 
-
-
-
-
 				//set levels
 				//////////////
 				var level = new Array();
@@ -461,7 +375,7 @@
 					level = document.getElementById("customContour").value.split(",");
 					if (document.getElementById('unitFeet').checked == true) {
 						for (var iLevel in level) {
-							level[iLevel] = Math.round(level[iLevel] * 0.3048);
+							level[iLevel] = Math.round(level[iLevel] * FTtoMeter);
 						}
 					}
 				}
@@ -471,11 +385,11 @@
 					var finalMin = min;
 					if (document.getElementById('unitFeet').checked) {
 						if(document.getElementById('intUnit').checked) {
-							finalMin = Math.ceil(finalMin * 3.28084) * 0.3048;
+							finalMin = Math.ceil(finalMin * MetertoFT) * FTtoMeter;
 						} else if(document.getElementById('intInterval').checked) {
-							finalMin = Math.ceil((finalMin * 3.28084) / step) * 0.3048 * step;
+							finalMin = (Math.ceil((finalMin * MetertoFT) / step) * step) * FTtoMeter ;
 						}
-						step = step * 0.3048;
+						step = step * FTtoMeter;
 					} else if(document.getElementById('intUnit').checked){
 						finalMin = Math.ceil(finalMin);
 					} else if(document.getElementById('intInterval').checked) {
@@ -535,6 +449,57 @@
 				polyLineArray = new Array();
 				var allVertices = "";
 				levelString = "";
+
+				var canvas = document.getElementById('heightmap');
+				canvas.width = width;
+				canvas.height = height;
+				var ctx = canvas.getContext('2d');
+				ctx.clearRect(0, 0, canvas.width, canvas.height);
+				ctx.setTransform(1,0,0,1,0,0);
+				var imgData = ctx.createImageData(width, height);
+				
+				var minLat = minLatitude();
+				var minLong = minLongitude(); 
+				var maxLat = maxLatitude(); 
+				var maxLong = maxLongitude(); 
+
+				xMeterLength = getDistanceFromLatLonInM(minLat, minLong, minLat, maxLong);
+				yMeterLength = getDistanceFromLatLonInM(minLat, minLong, maxLat, minLong);
+				zMeterLength = max - min;
+				
+				var aspectRatio = xMeterLength / yMeterLength;
+				var xUnit = xMeterLength / width;
+				var yUnit = yMeterLength / height;
+
+				for(var ym  in matrix) {
+					for(xm in matrix[ym]) {
+						var row = (height - ym) * width * 4; //reverse y for bitmap
+						var col =  xm * 4;
+						var g = Math.floor(255 * ((matrix[ym][xm] - min) / zMeterLength));
+						imgData.data[row + col] = g;
+						imgData.data[row + col + 1] = g;
+						imgData.data[row + col + 2] = g;
+						imgData.data[row + col + 3] = 255;
+					}
+				}
+				
+				ctx.putImageData(imgData, 0, 0);
+				ctx.drawImage(canvas, 0, 0);
+
+
+				document.getElementById("hm-x").textContent = (Math.round(xMeterLength * (units == 'ft'? MetertoFT: 1) * 1000) / 1000) + ' ' + units;
+				document.getElementById("hm-y").textContent = (Math.round(yMeterLength * (units == 'ft'? MetertoFT: 1) * 1000) / 1000) + ' ' + units;
+				document.getElementById("hm-z").textContent = (Math.round(zMeterLength * (units == 'ft'? MetertoFT: 1) * 1000) / 1000) + ' ' + units;
+				document.getElementById("hm-sw").textContent = `${minLat},${minLong}`;
+				document.getElementById("hm-se").textContent = `${minLat},${maxLong}`;
+				document.getElementById("hm-nw").textContent = `${maxLat},${minLong}`;
+				document.getElementById("hm-ne").textContent = `${maxLat},${maxLong}`;
+
+				$('#heightmap-view').show();
+
+				var LongDiff = maxLong - minLong;
+				var LatDiff = maxLat - minLat;
+
 				//loop over contours
 				for (var iLevel in level) {
 					var rgb = value2RGB(level[iLevel], level[0], level[level.length - 1]);
@@ -543,17 +508,12 @@
 					output = c.contourList();
 					//console.log(output);
 
-
-
 					//plot
 					for (iPath = 0; iPath < output.length; iPath++) {
 						var flightPlanCoordinates = new Array();
 						var thesePoints = "";
 						var thesePointsKML = "";
 						for (iVertex = 0; iVertex < output[iPath].length; iVertex++) {
-
-							LongDiff = (+$('#maxLongitude').val() - +$('#minLongitude').val());
-							LatDiff = (+$('#maxLatitude').val() - +$('#minLatitude').val());
 
 							/*
 								if (LongDiff >= LatDiff){
@@ -567,7 +527,7 @@
 							*/
 
 							normalizedX = ((output[iPath][iVertex].y - 1) / (width - 1)) * plotResolutionX;
-							normalizedY = ((output[iPath][iVertex].x - 1) / (height - 1)) * plotResolutionY;
+							normalizedY = (1 - ((output[iPath][iVertex].x - 1) / (height - 1))) * plotResolutionY; //svg y-coords reversed
 
 							if (document.getElementById("plotCircles").checked) {
 								//plot circles
@@ -580,8 +540,8 @@
 							//prepare overlay on google maps
 
 
-							normalizedLat = +$('#minLatitude').val() + ((output[iPath][iVertex].x - 1) / (height - 1)) * LatDiff;
-							normalizedLong = +$('#minLongitude').val() + ((output[iPath][iVertex].y - 1) / (width - 1)) * LongDiff;
+							normalizedLat =  minLat + ((output[iPath][iVertex].x - 1) / (height - 1)) * LatDiff;
+							normalizedLong = minLong + ((output[iPath][iVertex].y - 1) / (width - 1)) * LongDiff;
 
 							thesePointsKML += normalizedLong + "," + normalizedLat + ",0 \n";
 
@@ -594,7 +554,7 @@
 							//kmlString += '<Placemark><name>Contour</name><description>Contour</description><styleUrl>Contour</styleUrl><LineString><extrude>1</extrude><tessellate>1</tessellate><altitudeMode>absolute</altitudeMode><coordinates>' + thesePointsKML + '</coordinates></LineString></Placemark>';
 							var colorId = rgb.replace(/,/g, "-");
 							kmlColors.add(colorId);
-							kmlString += '<Placemark><name>Contour</name><styleUrl>#' + colorId + '</styleUrl><description>Elevation: ' + (Math.round((level[iLevel] * (units == 'ft'? 3.281: 1)) * 10) / 10) + ' ' + units + '. </description><LineString><coordinates>' + thesePointsKML + '</coordinates></LineString></Placemark>';
+							kmlString += '<Placemark><name>Contour</name><styleUrl>#' + colorId + '</styleUrl><description>Elevation: ' + (Math.round((level[iLevel] * (units == 'ft'? MetertoFT: 1)) * 10) / 10) + ' ' + units + '. </description><LineString><coordinates>' + thesePointsKML + '</coordinates></LineString></Placemark>';
 						}
 
 
@@ -610,8 +570,6 @@
 						//alert(flightPath.getPath())
 						polyLineArray.push(flightPath);
 						//flightPath.setMap(map);
-
-
 					}
 
 
@@ -650,15 +608,13 @@
 
 				//var pointsNS = parseInt($('#pointsNS').val());
 				//var pointsWE = parseInt($('#pointsWE').val());
-				LongDiff = +$('#maxLongitude').val() - +$('#minLongitude').val();
-				LatDiff = +$('#maxLatitude').val() - +$('#minLatitude').val();
-				meanLong = (+$('#maxLongitude').val() - +$('#minLongitude').val()) / 2;
-				meanLat = (+$('#maxLatitude').val() - +$('#minLatitude').val()) / 2;
+				meanLong = (maxLong - minLong) / 2;
+				meanLat = (maxLat - minLat) / 2;
 				stepsizeLong = parseFloat(LongDiff) / (width - 1);
 				stepsizeLat = parseFloat(LatDiff) / (height - 1);
 				//console.log(LongDiff,stepsizeLong,width,Math.round(LongDiff));
-				document.getElementById("WEstep").innerHTML = meter2unit(Math.round(getDistanceFromLatLonInM(meanLat, +$('#maxLongitude').val(), meanLat, +$('#minLongitude').val()) / (width - 1)), true);
-				document.getElementById("NSstep").innerHTML = meter2unit(Math.round(getDistanceFromLatLonInM(+$('#maxLatitude').val(), meanLong, +$('#minLatitude').val(), meanLong) / (height - 1)), true);
+				document.getElementById("WEstep").innerHTML = meter2unit(Math.round(getDistanceFromLatLonInM(meanLat, maxLong, meanLat, minLong) / (width - 1)), true);
+				document.getElementById("NSstep").innerHTML = meter2unit(Math.round(getDistanceFromLatLonInM(maxLat, meanLong, minLat, meanLong) / (height - 1)), true);
 
 				//document.getElementById("WEstep").innerHTML = Math.round(getDistanceFromLatLonInM(meanLat,0,meanLat,stepsizeLong)*1)/1;
 				//document.getElementById("NSstep").innerHTML = Math.round(getDistanceFromLatLonInM(0,meanLong,stepsizeLat,meanLong));
@@ -793,7 +749,7 @@
                 new google.maps.LatLng(pointLat + dh, pointLong + dw)
             );
 
-            class USGSOverlay extends google.maps.OverlayView {
+            class OSROverlay extends google.maps.OverlayView {
                 constructor(bounds, image) {
                     super();
                     this.bounds = bounds;
@@ -911,7 +867,7 @@
             }
 
 
-			const overlay = new USGSOverlay(overlayBounds, './Riverbed-Ranch-Parcel-Plot.png');
+			const overlay = new OSROverlay(overlayBounds, './Riverbed-Ranch-Parcel-Plot.png');
             overlay.setMap(map);
 
 			const toggleButton = document.createElement("button");
@@ -1005,6 +961,9 @@
 				document.getElementById("minLongitude").value = NWc.lng('get');
 				document.getElementById("maxLatitude").value = SEc.lat('get');
 				document.getElementById("maxLongitude").value = SEc.lng('get');
+				$('#output').val("");
+				clearMap("contour");
+				clearMap("samplepoints");
 			}
 		}
 
@@ -1130,7 +1089,6 @@
 					b = new google.maps.LatLngBounds(
 						new google.maps.LatLng(Math.max(NWc.lat('get'), SEc.lat('get')), Math.min(NWc.lng('get'), SEc.lng('get'))),
 						new google.maps.LatLng(Math.min(NWc.lat('get'), SEc.lat('get')), Math.max(NWc.lng('get'), SEc.lng('get'))));
-
 
 					rectangle.setBounds(b);
 				}
@@ -1563,7 +1521,7 @@
 
 		function getDistanceFromLatLonInM(lat1, lon1, lat2, lon2) {
 			https://stackoverflow.com/questions/27928/how-do-i-calculate-distance-between-two-latitude-longitude-points
-			var R = 6371; // Radius of the earth in km
+			var R = 6371071; // Radius of the earth in km
 			var dLat = deg2rad(lat2 - lat1);  // deg2rad below
 			var dLon = deg2rad(lon2 - lon1);
 			var a =
@@ -1572,7 +1530,7 @@
 				Math.sin(dLon / 2) * Math.sin(dLon / 2)
 				;
 			var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-			var d = R * c * 1000; // Distance in km
+			var d = R * c; // Distance in m
 			return d;
 		}
 
@@ -1657,8 +1615,8 @@
 			<table style="border:black 1px solid;border-collapse:collapse;">
 				<tr>
 					<td class="PO"><span class="POtitle">Sampling</span>
-						<div style="float:right;"><input type="button" onclick="getData()" value="get data" title="retrieve elevation data"></div>
-						<div style="float:right;"><input type="button" onclick="setCoords()" value="set coords" title="get coords from map"></div>
+						<div style="float:right;"><input type="button" onclick="getData()" value="Get Data" title="retrieve elevation data"></div>
+						<div style="float:right;"><input type="button" onclick="setCoords()" value="Set Coords" title="get coords from map"></div>
 					</td>
 				</tr>
 				<tr>
@@ -1693,10 +1651,10 @@
 
 		<div style="float:left;">
 			<table style="border:black 1px solid;border-collapse:collapse;">
-				<
+				<tr>
 					<td class="PO"><span class="POtitle">Plot Options</span>
 						<div style="float:right;"><input type="button" onclick="calculateContour()"
-								value="redraw contours" title="draw contours"></div>
+								value="Redraw Contours" title="Draw Contours"></div>
 					</td>
 				</tr>
 				<tr>
@@ -1747,7 +1705,7 @@
 					<td class="PO"><span class="POtitle">Save/Load Cookie</span></td>
 				</tr>
 				<tr>
-					<td class="PO"><input type="button" onclick="saveCurrentData()" value="save data in cookie"
+					<td class="PO"><input type="button" onclick="saveCurrentData()" value="Save Data in Cookie"
 							title="Save current data in a cookie"></td>
 				</tr>
 				<tr>
@@ -1830,11 +1788,11 @@
 
 		<h3>Instructions</h3>
 		<p style="width:500px;text-align: justify;margin-top:0px;"><p>Go to the desired location in the map, set two
-			markers by clicking the map to define a rectangle, then set the corrdinates by clicking <b>get coords</b> (or enter coordinates manually).</p>
+			markers by clicking the map to define a rectangle, then set the corrdinates by clicking <b>Get Coords</b> (or enter coordinates manually).</p>
 
-			<p>Set the sampling point desitiy. Click <b>get data</b> to start querying elevations. <br><i>Note: Do not make samples sizes too large. If you go beyond 2500 total samples per day, querying data may stop working
+			<p>Set the sampling point desitiy. Click <b>Get Data</b> to start querying elevations. <br><i>Note: Do not make samples sizes too large. If you go beyond 2500 total samples per day, querying data may stop working
 				according to the Google Elevation API description</i>.</p>
-			<p>After the data is queried, you can change plot options and update the drawing by clicking <b>redraw contours</b>. This will not re-query the data, only redaw the lines.</p>
+			<p>After the data is queried, you can change plot options and update the drawing by clicking <b>Redraw Contours</b>. This will not re-query the data, only redaw the lines.</p>
 			<p>You can save some data in cookies, however there is a limit. Use the manual saving text
 			areas below alternatively.</p>
 		</p>
@@ -1894,7 +1852,7 @@
 		layer (e.g. to create overlays) you can copy the code underneath the image below and save it as an svg file.
 		Please note, as for now, the drawing below is square and you may want to stretch it to cover the actual area in
 		a map.</p>
-	<table>
+	<table id="resultTable">
 		<tr>
 			<td>
 				<div><textarea id="copySVG" style="width:500px;height:30px;"></textarea></div>
@@ -1917,6 +1875,17 @@
 		<tr>
 			<td>
 				<div id="contour" style="float: left;"></div>
+			</td>
+		</tr>
+		<tr id="heightmap-view" style="display:none">
+
+			<td>
+				<p>Height Map<p>
+				<canvas id="heightmap" width="100" height="100"></canvas>
+				<p>
+				Extents<br>X: <span id="hm-x">0</span>, Y: <span id="hm-y">0</span>, Z: <span id="hm-z">0</span><br><br>
+				Corners<br>SE: <span id="hm-se">0,0</span><br>SW: <span id="hm-sw">0,0</span><br>NE: <span id="hm-ne">0,0</span><br>NW: <span id="hm-nw">0,0</span>
+				</p>
 			</td>
 		</tr>
 	</table>
